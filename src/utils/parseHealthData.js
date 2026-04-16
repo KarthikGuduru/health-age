@@ -1,4 +1,4 @@
-import JSZip from 'jszip';
+import { Unzip, UnzipInflate } from 'fflate';
 
 const RECORD_TYPES = {
   rhr: 'HKQuantityTypeIdentifierRestingHeartRate',
@@ -61,9 +61,7 @@ async function parseStream(chunkIterator, onProgress) {
   let buffer = '';
   let totalBytes = 0;
   let recordCount = 0;
-  // Safety tail: keep enough unprocessed tail to cover the longest element.
-  // Workouts can hold a long <MetadataEntry> block; 64 KB is plenty.
-  const TAIL = 64 * 1024;
+  let lastProgress = 0;
 
   let sawDOB = false;
   let sawSex = false;
@@ -82,12 +80,26 @@ async function parseStream(chunkIterator, onProgress) {
       if (m) { records.userInfo.biologicalSex = m[1]; sawSex = true; }
     }
 
-    // Process all complete <Record .../> entries we can see.
-    let lastGoodIdx = 0;
+    // Find the safe cut point: the last fully-closed element boundary.
+    // Everything before it has been fully received and can be processed.
+    // Everything after it is kept for the next chunk.
+    const cutAt = findSafeCut(buffer);
+    if (cutAt <= 0) {
+      // No complete element yet — keep waiting for more data
+      if (buffer.length > 16 * 1024 * 1024) {
+        // Pathological case — trim from the front to avoid runaway
+        buffer = buffer.slice(buffer.length - 8 * 1024 * 1024);
+      }
+      continue;
+    }
 
-    recordRe.lastIndex = 0;
+    const slice = buffer.slice(0, cutAt);
+    buffer = buffer.slice(cutAt);
+
+    // Process records in the slice (each regex walks the slice once)
     let match;
-    while ((match = recordRe.exec(buffer)) !== null) {
+    recordRe.lastIndex = 0;
+    while ((match = recordRe.exec(slice)) !== null) {
       recordCount++;
       const attrs = match[1];
       const typeM = attrs.match(/type="([^"]+)"/);
@@ -106,12 +118,10 @@ async function parseStream(chunkIterator, onProgress) {
           }
         }
       }
-      lastGoodIdx = recordRe.lastIndex;
     }
 
-    // ActivitySummary
     activityRe.lastIndex = 0;
-    while ((match = activityRe.exec(buffer)) !== null) {
+    while ((match = activityRe.exec(slice)) !== null) {
       const attrs = match[1];
       const dateM = attrs.match(/dateComponents="([^"]+)"/);
       if (dateM) {
@@ -127,38 +137,26 @@ async function parseStream(chunkIterator, onProgress) {
           moveGoal: goalM ? parseFloat(goalM[1]) : 0,
         });
       }
-      if (activityRe.lastIndex > lastGoodIdx) lastGoodIdx = activityRe.lastIndex;
     }
 
-    // Workouts — match block form first (consumes up to </Workout>),
-    // then flat form on whatever remains.
     workoutBlockRe.lastIndex = 0;
-    while ((match = workoutBlockRe.exec(buffer)) !== null) {
+    while ((match = workoutBlockRe.exec(slice)) !== null) {
       addWorkout(records.workouts, match[1]);
-      if (workoutBlockRe.lastIndex > lastGoodIdx) lastGoodIdx = workoutBlockRe.lastIndex;
     }
     workoutFlatRe.lastIndex = 0;
-    while ((match = workoutFlatRe.exec(buffer)) !== null) {
+    while ((match = workoutFlatRe.exec(slice)) !== null) {
       addWorkout(records.workouts, match[1]);
-      if (workoutFlatRe.lastIndex > lastGoodIdx) lastGoodIdx = workoutFlatRe.lastIndex;
     }
 
-    // Trim the buffer: keep only the unprocessed tail so incomplete
-    // elements can be completed by the next chunk.
-    const trimTo = Math.max(0, lastGoodIdx - TAIL);
-    if (trimTo > 0) {
-      buffer = buffer.slice(trimTo);
-    }
-
-    if (onProgress && recordCount > 0) {
+    // Progress update — throttled to avoid flooding React
+    const now = Date.now();
+    if (onProgress && now - lastProgress > 250) {
+      lastProgress = now;
       onProgress(
         `Parsing… ${(totalBytes / 1024 / 1024).toFixed(0)} MB · ${(recordCount / 1000).toFixed(0)}k records`
       );
-    }
-
-    // Hard cap buffer so we can't OOM in pathological cases
-    if (buffer.length > 8 * 1024 * 1024) {
-      buffer = buffer.slice(buffer.length - 4 * 1024 * 1024);
+      // Yield to the event loop so React can repaint
+      await new Promise(r => setTimeout(r, 0));
     }
   }
 
@@ -187,6 +185,17 @@ async function parseStream(chunkIterator, onProgress) {
   }
 
   return records;
+}
+
+// Return the index after the last complete element boundary in the buffer.
+// Safe cut points: after '/>' (self-closed) or after '</Workout>' (block).
+// Returns 0 if no complete element found yet.
+function findSafeCut(buffer) {
+  const lastSelfClose = buffer.lastIndexOf('/>');
+  const lastWorkoutClose = buffer.lastIndexOf('</Workout>');
+  const a = lastSelfClose >= 0 ? lastSelfClose + 2 : -1;
+  const b = lastWorkoutClose >= 0 ? lastWorkoutClose + 10 : -1;
+  return Math.max(a, b, 0);
 }
 
 function addWorkout(arr, attrs) {
@@ -227,26 +236,77 @@ async function* iterateFileStream(file) {
   }
 }
 
-async function* iterateZipEntry(zipEntry) {
-  // Get the decompressed entry as a Blob — this avoids JSZip's string-join
-  // path that blows past V8's max string length on huge export.xml files.
-  // Blobs can back to disk in the browser, so size isn't the constraint
-  // that a single string is.
-  const blob = await zipEntry.async('blob');
-  yield* iterateBlobStream(blob);
-}
-
-async function* iterateBlobStream(blob) {
+// True streaming unzip: feed the zip file in as chunks from file.stream(),
+// let fflate emit the decompressed export.xml chunks as they come.
+async function* iterateZipFromFile(file, onProgress) {
   const decoder = new TextDecoder('utf-8');
-  const reader = blob.stream().getReader();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      const tail = decoder.decode();
-      if (tail) yield tail;
+  const xmlChunks = [];
+  let xmlDone = false;
+  let xmlError = null;
+  let resolveWait = null;
+
+  const wake = () => {
+    if (resolveWait) { const r = resolveWait; resolveWait = null; r(); }
+  };
+
+  const unzipper = new Unzip();
+  unzipper.register(UnzipInflate);
+
+  unzipper.onfile = (entry) => {
+    if (!entry.name.endsWith('export.xml')) {
+      // Skip other entries; fflate ignores them if we never call start()
       return;
     }
-    yield decoder.decode(value, { stream: true });
+    entry.ondata = (err, data, final) => {
+      if (err) {
+        xmlError = err;
+      } else if (data && data.length) {
+        xmlChunks.push(decoder.decode(data, { stream: !final }));
+      }
+      if (final) {
+        const tail = decoder.decode();
+        if (tail) xmlChunks.push(tail);
+        xmlDone = true;
+      }
+      wake();
+    };
+    entry.start();
+  };
+
+  // Pump the raw zip bytes into fflate in the background
+  const pump = (async () => {
+    const reader = file.stream().getReader();
+    let bytesRead = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          unzipper.push(new Uint8Array(0), true);
+          break;
+        }
+        unzipper.push(value, false);
+        bytesRead += value.length;
+        if (onProgress) {
+          onProgress(`Unzipping… ${(bytesRead / 1024 / 1024).toFixed(0)} MB read`);
+        }
+      }
+    } catch (err) {
+      xmlError = err;
+      xmlDone = true;
+      wake();
+    }
+  })();
+
+  while (true) {
+    if (xmlChunks.length) {
+      yield xmlChunks.shift();
+    } else if (xmlDone) {
+      if (xmlError) throw xmlError;
+      await pump;
+      return;
+    } else {
+      await new Promise((res) => { resolveWait = res; });
+    }
   }
 }
 
@@ -259,14 +319,7 @@ export async function parseHealthExport(file, onProgress) {
 
   if (file.name.endsWith('.zip')) {
     if (onProgress) onProgress('Opening zip archive…');
-    const zip = await JSZip.loadAsync(file);
-    const xmlEntry = zip.file('apple_health_export/export.xml')
-      || zip.file('export.xml')
-      || Object.values(zip.files).find(f => f.name.endsWith('export.xml'));
-    if (!xmlEntry) {
-      throw new Error('Could not find export.xml in the zip file');
-    }
-    iterator = iterateZipEntry(xmlEntry);
+    iterator = iterateZipFromFile(file, onProgress);
   } else {
     iterator = iterateFileStream(file);
   }
