@@ -56,7 +56,10 @@ async function parseStream(chunkIterator, onProgress) {
 
   // Global regexes — used with exec() + lastIndex walking across the buffer.
   // We add lastIndex bookkeeping so we can safely trim the processed portion.
-  const recordRe = /<Record\s+([^>]+)\/>/g;
+  // Match Record opening tag regardless of whether it self-closes (/>) or has
+  // child elements (>...</Record>). We only need the attributes in the opening
+  // tag — value, type, startDate, endDate are always there.
+  const recordRe = /<Record\s+([^>]+?)(?:\/?>)/g;
   const activityRe = /<ActivitySummary\s+([^>]+)\/>/g;
   // Workouts: flat form OR with nested children closing </Workout>
   const workoutFlatRe = /<Workout\s+([^>]+)\/>/g;
@@ -337,7 +340,7 @@ function processRecords(records) {
   // Core metrics
   const recentRHR = getRecent(records.rhr, 30);
   const recentHRV = getRecent(records.hrv, 30);
-  const recentVO2 = getRecent(records.vo2max, 90);
+  const recentVO2 = getRecent(records.vo2max, 365); // Apple Watch measures VO2 Max infrequently
   const recentSpO2 = getRecent(records.spo2, 30);
   const recentRR = getRecent(records.respiratoryRate, 30);
   const recentWalkHR = getRecent(records.walkingHRAvg, 30);
