@@ -105,7 +105,7 @@ export default function Landing({ onFile, status, progress, error }) {
             <HowStep
               n="2"
               title="Upload to this app"
-              body="Drag the zip in. We parse VO2 Max, HRV, resting heart rate, sleep, SpO2, and more — entirely in your browser."
+              body="Drag the export.zip or the export.xml (unzipped) directly. We parse VO2 Max, HRV, resting heart rate, sleep, SpO2, and more — entirely in your browser."
             />
             <HowStep
               n="3"
@@ -131,11 +131,12 @@ export default function Landing({ onFile, status, progress, error }) {
               <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
             <div className="dropzone-title type-tile-heading">
-              Drop your <code className="inline-code">export.zip</code> here
+              Drop <code className="inline-code">export.zip</code> or <code className="inline-code">export.xml</code> here
             </div>
             <div className="dropzone-sub type-body">or click to browse</div>
             <div className="dropzone-hint type-caption">
-              All processing happens on-device. Your health data never leaves this tab.
+              Zip too slow? Unzip it first and drop the export.xml directly.<br />
+              All processing happens on-device. Your data never leaves this tab.
             </div>
           </div>
         </div>

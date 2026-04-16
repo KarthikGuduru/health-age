@@ -1,4 +1,4 @@
-import { Unzip, UnzipInflate } from 'fflate';
+import { unzipSync } from 'fflate';
 
 const RECORD_TYPES = {
   rhr: 'HKQuantityTypeIdentifierRestingHeartRate',
@@ -236,82 +236,43 @@ async function* iterateFileStream(file) {
   }
 }
 
-// True streaming unzip: feed the zip file in as chunks from file.stream(),
-// let fflate emit the decompressed export.xml chunks as they come.
+// Unzip the export.zip in the worker (off main thread) using fflate's
+// synchronous unzipSync with a filter so only export.xml is decompressed.
+// Then stream the decompressed Uint8Array in 256 KB text chunks.
 async function* iterateZipFromFile(file, onProgress) {
-  const decoder = new TextDecoder('utf-8');
-  const xmlChunks = [];
-  let xmlDone = false;
-  let xmlError = null;
-  let resolveWait = null;
+  onProgress?.('Reading zip into memory…');
+  const buffer = await file.arrayBuffer();
 
-  const wake = () => {
-    if (resolveWait) { const r = resolveWait; resolveWait = null; r(); }
-  };
-
-  const unzipper = new Unzip();
-  unzipper.register(UnzipInflate);
-
-  unzipper.onfile = (entry) => {
-    if (!entry.name.endsWith('export.xml')) {
-      // Must start + drain so fflate can advance past this entry in the stream.
-      // Without this, fflate stalls if another file (e.g. export_cda.xml) precedes
-      // export.xml in the archive — it can't skip without decompressing.
-      entry.ondata = () => {};
-      entry.start();
-      return;
-    }
-    entry.ondata = (err, data, final) => {
-      if (err) {
-        xmlError = err;
-      } else if (data && data.length) {
-        xmlChunks.push(decoder.decode(data, { stream: !final }));
-      }
-      if (final) {
-        const tail = decoder.decode();
-        if (tail) xmlChunks.push(tail);
-        xmlDone = true;
-      }
-      wake();
-    };
-    entry.start();
-  };
-
-  // Pump the raw zip bytes into fflate in the background
-  const pump = (async () => {
-    const reader = file.stream().getReader();
-    let bytesRead = 0;
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          unzipper.push(new Uint8Array(0), true);
-          break;
-        }
-        unzipper.push(value, false);
-        bytesRead += value.length;
-        if (onProgress) {
-          onProgress(`Unzipping… ${(bytesRead / 1024 / 1024).toFixed(0)} MB read`);
-        }
-      }
-    } catch (err) {
-      xmlError = err;
-      xmlDone = true;
-      wake();
-    }
-  })();
-
-  while (true) {
-    if (xmlChunks.length) {
-      yield xmlChunks.shift();
-    } else if (xmlDone) {
-      if (xmlError) throw xmlError;
-      await pump;
-      return;
-    } else {
-      await new Promise((res) => { resolveWait = res; });
-    }
+  onProgress?.('Decompressing export.xml…');
+  let files;
+  try {
+    files = unzipSync(new Uint8Array(buffer), {
+      filter: (f) => f.name.endsWith('export.xml'),
+    });
+  } catch (err) {
+    throw new Error(`Zip decompression failed: ${err.message}. Try uploading the export.xml file directly.`);
   }
+
+  const xmlKey = Object.keys(files).find((k) => k.endsWith('export.xml'));
+  if (!xmlKey) {
+    throw new Error('export.xml not found in zip. Unzip the file and upload export.xml directly.');
+  }
+
+  const xmlData = files[xmlKey]; // Uint8Array of the full decompressed XML
+  const decoder = new TextDecoder('utf-8');
+  const CHUNK = 256 * 1024; // 256 KB
+
+  for (let i = 0; i < xmlData.length; i += CHUNK) {
+    const end = Math.min(i + CHUNK, xmlData.length);
+    const isFinal = end >= xmlData.length;
+    yield decoder.decode(xmlData.subarray(i, end), { stream: !isFinal });
+    onProgress?.(`Parsing… ${(end / 1024 / 1024).toFixed(0)} MB`);
+    // Yield to event loop so progress messages can be posted
+    await new Promise((r) => setTimeout(r, 0));
+  }
+
+  const tail = decoder.decode();
+  if (tail) yield tail;
 }
 
 // ============================================
