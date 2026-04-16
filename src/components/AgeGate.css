@@ -1,0 +1,100 @@
+.age-gate {
+  min-height: 100vh;
+  background: var(--color-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 22px;
+}
+
+.age-gate-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-radius: 20px;
+  padding: 48px 44px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+}
+
+.age-gate-icon {
+  font-size: 40px;
+  margin-bottom: 20px;
+}
+
+.age-gate-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-white);
+  margin: 0 0 12px;
+}
+
+.age-gate-body {
+  font-family: var(--font-text);
+  font-size: 15px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.62);
+  margin: 0 0 32px;
+}
+
+.age-gate-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.age-gate-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.age-gate-label {
+  font-family: var(--font-text);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.01em;
+}
+
+.age-gate-input {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 13px 16px;
+  font-family: var(--font-text);
+  font-size: 17px;
+  color: var(--color-white);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.age-gate-input:focus {
+  border-color: var(--color-blue);
+}
+
+.age-gate-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+/* Remove number input arrows */
+.age-gate-input::-webkit-outer-spin-button,
+.age-gate-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+.age-gate-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.age-gate-btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 4px;
+}

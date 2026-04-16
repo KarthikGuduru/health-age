@@ -61,8 +61,9 @@ async function parseStream(chunkIterator, onProgress) {
   // Workouts: flat form OR with nested children closing </Workout>
   const workoutFlatRe = /<Workout\s+([^>]+)\/>/g;
   const workoutBlockRe = /<Workout\s+([^>]*?)>[\s\S]*?<\/Workout>/g;
-  const dobRe = /<Me[\s\S]*?DateOfBirth[^>]*?value="([^"]+)"/;
-  const sexRe = /BiologicalSex[^>]*?value="([^"]+)"/;
+  // Apple Health XML: <Me HKCharacteristicTypeIdentifierDateOfBirth="1990-03-15" HKCharacteristicTypeIdentifierBiologicalSex="HKBiologicalSexMale" .../>
+  const dobRe = /HKCharacteristicTypeIdentifierDateOfBirth="([^"]+)"/;
+  const sexRe = /HKCharacteristicTypeIdentifierBiologicalSex="([^"]+)"/;
 
   let buffer = '';
   let totalBytes = 0;
