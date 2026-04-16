@@ -29,7 +29,13 @@ for (const [key, id] of Object.entries(RECORD_TYPES)) {
 }
 
 function parseDate(str) {
-  return new Date(str);
+  if (!str) return new Date(NaN);
+  // Apple Health dates: "2024-01-15 07:32:45 -0700"
+  // Safari requires ISO 8601: "2024-01-15T07:32:45-07:00"
+  const iso = str
+    .replace(' ', 'T')                              // space → T
+    .replace(/ ([+-])(\d{2})(\d{2})$/, '$1$2:$3'); // -0700 → -07:00
+  return new Date(iso);
 }
 
 // ============================================
