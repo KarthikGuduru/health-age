@@ -43,8 +43,8 @@
 @media (min-width: 960px) {
   .hero-dark {
     grid-template-columns: 1.1fr 0.9fr;
-    max-width: 1200px;
-    margin: 0 auto;
+    padding-left: max(80px, calc((100% - 1120px) / 2));
+    padding-right: max(80px, calc((100% - 1120px) / 2));
     gap: 64px;
   }
 }

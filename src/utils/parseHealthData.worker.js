@@ -254,7 +254,11 @@ async function* iterateZipFromFile(file, onProgress) {
 
   unzipper.onfile = (entry) => {
     if (!entry.name.endsWith('export.xml')) {
-      // Skip other entries; fflate ignores them if we never call start()
+      // Must start + drain so fflate can advance past this entry in the stream.
+      // Without this, fflate stalls if another file (e.g. export_cda.xml) precedes
+      // export.xml in the archive — it can't skip without decompressing.
+      entry.ondata = () => {};
+      entry.start();
       return;
     }
     entry.ondata = (err, data, final) => {
