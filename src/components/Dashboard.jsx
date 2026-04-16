@@ -102,7 +102,7 @@ export default function Dashboard({ result }) {
           </p>
 
           <div className="metrics-grid">
-            <MetricCard label="VO2 Max" value={fmt(metrics.vo2max.value, 1)} unit="mL/kg/min" samples={metrics.vo2max.count} />
+            <MetricCard label="VO2 Max" value={fmt(metrics.vo2max.value, 1)} unit="mL/kg/min" samples={metrics.vo2max.count} sub="Apple Watch reads ~10% low vs lab — age calc adjusted" />
             <MetricCard label="Resting Heart Rate" value={fmt(metrics.rhr.value, 0)} unit="bpm" samples={metrics.rhr.count} />
             <MetricCard label="Daily Steps" value={fmtInt(metrics.steps.value)} unit="steps" samples={metrics.steps.count} />
             <MetricCard label="Sleep" value={fmt(metrics.sleepDuration.value, 1)} unit="hrs" samples={metrics.sleepDuration.count} sub={`${fmt(metrics.sleepConsistency.value, 0)}% consistent`} />

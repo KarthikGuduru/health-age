@@ -224,7 +224,14 @@ export function calculateBioAge(parsedData) {
       value: metrics.vo2max.value,
       unit: 'mL/kg/min',
       weight: 1.0, // full weight — the single strongest predictor
-      hr: vo2HR(metrics.vo2max.value, age, biologicalSex),
+      // Apple Watch underestimates lab VO2 Max by ~5–15% (Passler 2019, Bhammar 2020).
+      // Apply a conservative 1.10 correction before comparing against lab-calibrated
+      // ACSM / Mandsager thresholds so the hazard ratio reflects true fitness.
+      hr: vo2HR(
+        metrics.vo2max.value != null ? metrics.vo2max.value * 1.10 : null,
+        age,
+        biologicalSex
+      ),
       context: 'Cardiorespiratory fitness — strongest longevity predictor',
     },
     {
