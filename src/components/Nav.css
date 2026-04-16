@@ -1,0 +1,80 @@
+/* Liquid glass navigation — signature Apple pattern */
+.nav-glass {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  z-index: 9000;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nav-inner {
+  max-width: 1024px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-white);
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-white);
+  font-family: var(--font-text);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.016em;
+  opacity: 0.92;
+  transition: opacity 0.2s ease;
+}
+
+.nav-brand:hover {
+  opacity: 1;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.nav-link {
+  color: var(--color-white);
+  font-family: var(--font-text);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  opacity: 0.88;
+  cursor: default;
+}
+
+.nav-action {
+  color: var(--color-bright-blue);
+  font-family: var(--font-text);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(41, 151, 255, 0.4);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-action:hover {
+  background: rgba(41, 151, 255, 0.12);
+  border-color: var(--color-bright-blue);
+}
+
+@media (max-width: 640px) {
+  .nav-links .nav-link {
+    display: none;
+  }
+}

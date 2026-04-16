@@ -1,0 +1,33 @@
+/* App shell — layout only. Visuals live in component stylesheets. */
+
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+.container-wide {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+.section {
+  padding: 96px 0;
+}
+
+.section-dark {
+  background: var(--color-black);
+  color: var(--text-primary-dark);
+}
+
+.section-light {
+  background: var(--color-light-gray);
+  color: var(--text-primary-light);
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 64px 0;
+  }
+}

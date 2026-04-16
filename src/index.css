@@ -1,0 +1,212 @@
+/* ============================================
+   Apple-inspired Design System
+   Per DESIGN.md spec — "Liquid Glass" atmosphere
+   ============================================ */
+
+:root {
+  /* Colors — Primary */
+  --color-black: #000000;
+  --color-near-black: #1d1d1f;
+  --color-light-gray: #f5f5f7;
+  --color-white: #ffffff;
+
+  /* Interactive */
+  --color-apple-blue: #0071e3;
+  --color-link-blue: #0066cc;
+  --color-bright-blue: #2997ff;
+
+  /* Text */
+  --text-primary-light: #1d1d1f;
+  --text-primary-dark: #ffffff;
+  --text-secondary-light: rgba(0, 0, 0, 0.8);
+  --text-tertiary-light: rgba(0, 0, 0, 0.48);
+  --text-secondary-dark: rgba(255, 255, 255, 0.86);
+  --text-tertiary-dark: rgba(255, 255, 255, 0.56);
+
+  /* Dark surfaces */
+  --dark-surface-1: #272729;
+  --dark-surface-2: #262628;
+  --dark-surface-3: #28282a;
+  --dark-surface-4: #2a2a2d;
+  --dark-surface-5: #242426;
+
+  /* Button states */
+  --button-active: #ededf2;
+  --button-default-light: #fafafc;
+
+  /* Shadows */
+  --shadow-card: rgba(0, 0, 0, 0.22) 3px 5px 30px 0px;
+  --shadow-soft: rgba(0, 0, 0, 0.08) 0 10px 40px 0px;
+
+  /* Radii */
+  --radius-micro: 5px;
+  --radius-standard: 8px;
+  --radius-comfortable: 11px;
+  --radius-large: 12px;
+  --radius-xl: 20px;
+  --radius-pill: 980px;
+
+  /* Typography */
+  --font-display: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-text: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+  /* Focus */
+  --sk-focus-color: var(--color-apple-blue);
+
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-text);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: -0.022em;
+  color: var(--text-primary-light);
+  background: var(--color-white);
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--sk-focus-color);
+  outline-offset: 2px;
+}
+
+a {
+  color: var(--color-link-blue);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Typography utilities */
+.type-display-hero {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 7vw, 72px);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+}
+
+.type-section-heading {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+}
+
+.type-tile-heading {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.14;
+  letter-spacing: 0.007em;
+}
+
+.type-card-title {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.19;
+  letter-spacing: 0.011em;
+}
+
+.type-subheading {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1.28;
+  letter-spacing: 0.011em;
+}
+
+.type-body {
+  font-family: var(--font-text);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: -0.022em;
+}
+
+.type-body-emphasis {
+  font-family: var(--font-text);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.24;
+  letter-spacing: -0.022em;
+}
+
+.type-caption {
+  font-family: var(--font-text);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.29;
+  letter-spacing: -0.016em;
+}
+
+.type-caption-bold {
+  font-family: var(--font-text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.29;
+  letter-spacing: -0.016em;
+}
+
+.type-micro {
+  font-family: var(--font-text);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.33;
+  letter-spacing: -0.01em;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
