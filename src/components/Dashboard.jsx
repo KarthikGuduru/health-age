@@ -30,7 +30,7 @@ export default function Dashboard({ result }) {
   return (
     <main>
       {/* Hero result — black immersive section */}
-      <section className="result-hero">
+      <section className="result-hero" id="dashboard">
         <div className="container-wide">
           <div className="result-grid">
             <div className="result-main">
@@ -92,7 +92,7 @@ export default function Dashboard({ result }) {
       </section>
 
       {/* Core metrics — dark section */}
-      <section className="section section-dark">
+      <section className="section section-dark" id="metrics">
         <div className="container-wide">
           <h2 className="type-section-heading section-title">
             30-day averages from your Apple Watch.
@@ -120,7 +120,7 @@ export default function Dashboard({ result }) {
 
       {/* VO2 Max trend */}
       {trendData && trendData.length >= 2 && (
-        <section className="section section-light">
+        <section className="section section-light" id="trends">
           <div className="container-wide">
             <h2 className="type-section-heading section-title">
               VO2 Max, over time.
@@ -175,6 +175,22 @@ export default function Dashboard({ result }) {
           </div>
         </section>
       )}
+
+      {/* Heart Rate Zones guide */}
+      <section className="section section-light" id="zones">
+        <div className="container-wide">
+          <h2 className="type-section-heading section-title">Heart rate zones explained.</h2>
+          <p className="type-body section-lede">
+            Your max HR is approx. <strong>{Math.round(220 - (bioAge.chronologicalAge || 30))}</strong> bpm
+            (220 − age). Each zone is a % of that.
+          </p>
+          <div className="zones-list">
+            {ZONES.map(z => (
+              <ZoneCard key={z.zone} z={z} maxHR={Math.round(220 - (bioAge.chronologicalAge || 30))} />
+            ))}
+          </div>
+        </div>
+      </section>
 
       <footer className="footer">
         <div className="container">
@@ -332,6 +348,106 @@ function RecCard({ c, rec }) {
           <li key={i} className="rec-step">{s}</li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+// ─── Heart Rate Zones ────────────────────────────────────────────────────────
+
+const ZONES = [
+  {
+    zone: 1,
+    name: 'Active Recovery',
+    pctLow: 50, pctHigh: 60,
+    color: '#34c759',
+    feel: 'Effortless — could hold a full conversation',
+    benefit: 'Promotes recovery, burns fat, builds aerobic base without stress',
+    workouts: [
+      'Easy walk or light jog',
+      'Gentle cycling / e-bike at low resistance',
+      'Casual swim or easy yoga flow',
+      'Post-workout cool-down, 10–20 min',
+    ],
+  },
+  {
+    zone: 2,
+    name: 'Aerobic Base',
+    pctLow: 60, pctHigh: 70,
+    color: '#30d158',
+    feel: 'Comfortable — can speak in full sentences, slightly breathless',
+    benefit: 'The longevity zone. Builds mitochondrial density, improves fat oxidation, raises VO2 Max base',
+    workouts: [
+      '45–90 min easy run at "talking pace"',
+      'Long bike ride (endurance pace)',
+      'Rowing machine, moderate effort',
+      'Hiking with moderate elevation',
+      'Swimming laps at a comfortable clip',
+    ],
+  },
+  {
+    zone: 3,
+    name: 'Tempo / Aerobic Threshold',
+    pctLow: 70, pctHigh: 80,
+    color: '#ffd60a',
+    feel: 'Moderately hard — can speak 3–4 words at a time',
+    benefit: 'Improves lactate threshold; bridges zone 2 fitness with higher-intensity work',
+    workouts: [
+      '20–40 min tempo run (comfortably hard pace)',
+      'Steady-state bike at moderate-high resistance',
+      'Moderate HIIT class (Orange Theory, Barry\'s)',
+      'Swimming at a pushed but sustainable pace',
+    ],
+  },
+  {
+    zone: 4,
+    name: 'Threshold / Lactate Threshold',
+    pctLow: 80, pctHigh: 90,
+    color: '#ff9f0a',
+    feel: 'Hard — can only say a few words, breathing heavy',
+    benefit: 'Raises VO2 Max directly. The biggest bang for longevity per minute of exercise',
+    workouts: [
+      '4×4 intervals: 4 min hard, 3 min easy × 4 (the gold-standard protocol)',
+      '800m–1600m running repeats at 5K race pace',
+      'Cycling: 8–12 min hard climbs or power intervals',
+      'Rowing 500m–1000m pieces at max sustainable effort',
+      'CrossFit metcons (AMRAPs, chippers at high effort)',
+    ],
+  },
+  {
+    zone: 5,
+    name: 'VO2 Max / Neuromuscular',
+    pctLow: 90, pctHigh: 100,
+    color: '#ff453a',
+    feel: 'All-out — can\'t speak, maximum effort, unsustainable beyond ~60 sec',
+    benefit: 'Peaks cardiovascular output; spikes growth hormone and BDNF. Use sparingly — 1–2× per week max',
+    workouts: [
+      '30/30s: 30 sec all-out sprint, 30 sec rest × 8–12',
+      'Tabata: 20 sec max effort, 10 sec rest × 8',
+      '200m–400m running sprints, full recovery between',
+      'Assault bike or ski erg max-effort intervals',
+      'Hill sprints, 10–15 sec, full walk-down recovery',
+    ],
+  },
+];
+
+function ZoneCard({ z, maxHR }) {
+  const lo = Math.round(maxHR * z.pctLow / 100);
+  const hi = Math.round(maxHR * z.pctHigh / 100);
+  return (
+    <div className="zone-card">
+      <div className="zone-badge" style={{ background: z.color }}>Z{z.zone}</div>
+      <div className="zone-body">
+        <div className="zone-header">
+          <span className="zone-name">{z.name}</span>
+          <span className="zone-bpm">{lo}–{hi} bpm · {z.pctLow}–{z.pctHigh}% max HR</span>
+        </div>
+        <div className="zone-feel">{z.feel}</div>
+        <div className="zone-benefit">{z.benefit}</div>
+        <div className="zone-workouts-label">Example workouts</div>
+        <ul className="zone-workouts">
+          {z.workouts.map((w, i) => <li key={i}>{w}</li>)}
+        </ul>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,10 @@
 import './Nav.css';
 
+function scrollTo(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 export default function Nav({ onReset, hasResult }) {
   return (
     <nav className="nav-glass">
@@ -11,13 +16,21 @@ export default function Nav({ onReset, hasResult }) {
           <span>Health Age</span>
         </button>
         <div className="nav-links">
-          <span className="nav-link">Dashboard</span>
-          <span className="nav-link">Metrics</span>
-          <span className="nav-link">Trends</span>
-          {hasResult && (
-            <button className="nav-action" onClick={onReset}>
-              New Upload
-            </button>
+          {hasResult ? (
+            <>
+              <button className="nav-link" onClick={() => scrollTo('dashboard')}>Dashboard</button>
+              <button className="nav-link" onClick={() => scrollTo('metrics')}>Metrics</button>
+              <button className="nav-link" onClick={() => scrollTo('trends')}>Trends</button>
+              <button className="nav-link" onClick={() => scrollTo('zones')}>Zones</button>
+              <button className="nav-action" onClick={onReset}>New Upload</button>
+            </>
+          ) : (
+            <>
+              <span className="nav-link nav-link-inactive">Dashboard</span>
+              <span className="nav-link nav-link-inactive">Metrics</span>
+              <span className="nav-link nav-link-inactive">Trends</span>
+              <span className="nav-link nav-link-inactive">Zones</span>
+            </>
           )}
         </div>
       </div>
